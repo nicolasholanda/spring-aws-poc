@@ -1,17 +1,27 @@
 package com.github.nicolasholanda.spring_aws_poc.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.regions.Region;
-import org.springframework.beans.factory.annotation.Value;
-import jakarta.annotation.PostConstruct;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.net.URI;
 
 @Service
 public class PdfRequestService {
     @Value("${aws.sqs.queueUrl}")
     private String queueUrl;
+    @Value("${aws.sqs.endpoint:http://localhost:4566}")
+    private String sqsEndpoint;
+    @Value("${aws.sqs.accessKey:test}")
+    private String accessKey;
+    @Value("${aws.sqs.secretKey:test}")
+    private String secretKey;
 
     private SqsClient sqsClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -20,6 +30,10 @@ public class PdfRequestService {
     public void init() {
         this.sqsClient = SqsClient.builder()
                 .region(Region.US_EAST_1)
+                .endpointOverride(URI.create(sqsEndpoint))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)
+                ))
                 .build();
     }
 
